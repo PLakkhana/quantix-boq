@@ -111,7 +111,7 @@ with tab1:
         ])
         edited_earthworks = st.data_editor(default_earthworks, num_rows="dynamic", key=f"earthwork_table_pro_{st.session_state.reset_trigger}", use_container_width=True)
 
-    with st.expander("🏗️ 3. งานฐานราก (Footing Schedule - แยกอิสระ)", expanded=False):
+    with st.expander("🏗️ 3. งานฐานราก (Footing Schedule)", expanded=False):
         default_footings = pd.DataFrame([
             {"ฐานราก": "", "กว้าง B (ม.)": 0.0, "ยาว L (ม.)": 0.0, "หนา t (ม.)": 0.0, "จำนวน (ฐาน)": 0, "พื้นที่ไม้แบบ (ตร.ม.)": 0.0, "เหล็กตะแกรง": "DB12", "ระยะเรียง @ (ม.)": 0.20, "จำนวนเดือย": 4, "เหล็กเดือย": "DB16"},
         ])
@@ -123,7 +123,7 @@ with tab1:
             }
         )
 
-    with st.expander("🏛️ 4. งานเสาตอม่อ (Pier Schedule - แยกอิสระ)", expanded=False):
+    with st.expander("🏛️ 4. งานเสาตอม่อ (Pier Schedule)", expanded=False):
         default_piers = pd.DataFrame([
             {"เสาตอม่อ": "", "ความกว้าง b (ม.)": 0.20, "ความลึก h (ม.)": 0.20, "ความสูง H (ม.)": 1.00, "จำนวนต้น": 0, "พื้นที่ไม้แบบ (ตร.ม.)": 0.0, "เหล็กยืน": "DB12", "จำนวนเส้นยืน": 4, "เหล็กปลอก": "RB6", "ระยะเรียงปลอก s (ม.)": 0.15},
         ])
