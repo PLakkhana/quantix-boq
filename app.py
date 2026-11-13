@@ -5,13 +5,13 @@ import json
 
 st.set_page_config(page_title="Quantix - Structural BOQ", page_icon="🏗️", layout="wide")
 
-# --- โค้ด CSS บังคับฟอนต์ภาษาไทย (แก้ปัญหาสี่เหลี่ยมบน Streamlit Cloud) ---
+# --- โค้ด CSS บังคับฟอนต์ภาษาไทยมาตรฐาน ---
 st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap');
         
-        html, body, [class*="css"] {
-            font-family: 'Sarabun', sans-serif !important;
+        html, body, [class*="css"], .stApp, table, th, td, div, span, input, textarea, select {
+            font-family: 'Sarabun', 'Tahoma', sans-serif !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -45,7 +45,7 @@ floor_choices = ["ชั้น 1 (Ground Floor)", "ชั้น 2 (Second Floor)
 
 # --- Sidebar: ตั้งค่าราคาต่อหน่วยกลาง และ Waste Factor ---
 st.sidebar.header("⚙️ ตั้งค่าระบบและเปอร์เซ็นต์เผื่อเศษวัสดุ (Waste Factor)")
-with st.sidebar.expander("🛠️ ตั้งค่า Waste Factor (%)", expanded=True):
+with st.sidebar.expander("ตั้งค่า Waste Factor (%)", expanded=True):
     waste_concrete = st.number_input("เผื่อคอนกรีต (%):", min_value=0.0, max_value=20.0, value=0.0, step=1.0, key=f"wc_{st.session_state.reset_trigger}")
     waste_rebar = st.number_input("เผื่อเหล็กเสริม (%):", min_value=0.0, max_value=30.0, value=0.0, step=1.0, key=f"wr_{st.session_state.reset_trigger}")
     waste_formwork = st.number_input("เผื่อไม้แบบ (%):", min_value=0.0, max_value=20.0, value=0.0, step=1.0, key=f"wf_{st.session_state.reset_trigger}")
@@ -90,41 +90,52 @@ rebar_prices = {
 
 # --- สร้าง Tabs จัดระเบียบหน้าจอหลัก ---
 tab1, tab2, tab3, tab4 = st.tabs([
-    "📝 1. กำหนดข้อมูลโครงการ (Schedules)", 
-    "📊 2. สรุป Master BOQ", 
-    "🏢 3. แยกตามชั้น", 
-    "📈 4. วิเคราะห์ต้นทุน"
+    "1. กำหนดข้อมูลโครงการ (Schedules)", 
+    "2. สรุป Master BOQ", 
+    "3. แยกตามชั้น", 
+    "4. วิเคราะห์ต้นทุน"
 ])
 
 with tab1:
-    st.subheader("📋 ตารางกำหนดข้อมูลองค์อาคารและงานโครงสร้าง (รองรับการระบุชั้น)")
+    st.subheader("ตารางกำหนดข้อมูลองค์อาคารและงานโครงสร้าง (รองรับการระบุชั้น)")
     
-    with st.expander("📌 1. งานเสาเข็ม (Pile Schedule)", expanded=True):
+    with st.expander("1. งานเสาเข็ม (Pile Schedule)", expanded=True):
         default_piles = pd.DataFrame([
             {"ขนาดเสาเข็ม": "", "จำนวน (ต้น)": 0.0},
         ])
         edited_piles = st.data_editor(default_piles, num_rows="dynamic", key=f"pile_table_pro_{st.session_state.reset_trigger}", use_container_width=True)
 
-    with st.expander("🛠️ 2. งานดินขุด, งานใต้ดิน และระบบกันซึม", expanded=False):
+    with st.expander("2. งานดินขุด, งานใต้ดิน และระบบกันซึม", expanded=False):
         default_earthworks = pd.DataFrame([
             {"โซน/หลุม": "", "กว้าง (ม.)": 0.0, "ยาว (ม.)": 0.0, "ลึก (ม.)": 0.0, "จำนวนฐานราก": 0, "หนาทรายหยาบ (ม.)": 0.0, "หนาคอนกรีตหยาบ (ม.)": 0.0, "ต้องการกันซึม": False},
         ])
         edited_earthworks = st.data_editor(default_earthworks, num_rows="dynamic", key=f"earthwork_table_pro_{st.session_state.reset_trigger}", use_container_width=True)
 
-    with st.expander("🏗️ 3. งานฐานรากและเสาตอม่อ (Footing & Pier Schedule)", expanded=False):
+    with st.expander("3. งานฐานราก (Footing Schedule - แยกอิสระ)", expanded=False):
         default_footings = pd.DataFrame([
-            {"ฐานราก": "", "กว้าง B (ม.)": 0.0, "ยาว L (ม.)": 0.0, "หนา t (ม.)": 0.0, "ความสูงตอม่อ (ม.)": 0.0, "จำนวน (ฐาน)": 0, "พื้นที่ไม้แบบ (ตร.ม.)": 0.0, "เหล็กตะแกรง": "RB6", "ระยะเรียง @ (ม.)": 0.0, "จำนวนเดือย": 0, "เหล็กเดือย": "RB6", "เหล็กปลอก": "RB6", "ระยะเรียงปลอก (ม.)": 0.0},
+            {"ฐานราก": "", "กว้าง B (ม.)": 0.0, "ยาว L (ม.)": 0.0, "หนา t (ม.)": 0.0, "จำนวน (ฐาน)": 0, "พื้นที่ไม้แบบ (ตร.ม.)": 0.0, "เหล็กตะแกรง": "DB12", "ระยะเรียง @ (ม.)": 0.20, "จำนวนเดือย": 4, "เหล็กเดือย": "DB16"},
         ])
         edited_footings = st.data_editor(
             default_footings, num_rows="dynamic", key=f"footing_table_pro_{st.session_state.reset_trigger}", use_container_width=True,
             column_config={
                 "เหล็กตะแกรง": st.column_config.SelectboxColumn(options=rebar_choices),
                 "เหล็กเดือย": st.column_config.SelectboxColumn(options=rebar_choices),
+            }
+        )
+
+    with st.expander("4. งานเสาตอม่อ (Pier Schedule - แยกอิสระ)", expanded=False):
+        default_piers = pd.DataFrame([
+            {"เสาตอม่อ": "", "ความกว้าง b (ม.)": 0.20, "ความลึก h (ม.)": 0.20, "ความสูง H (ม.)": 1.00, "จำนวนต้น": 0, "พื้นที่ไม้แบบ (ตร.ม.)": 0.0, "เหล็กยืน": "DB12", "จำนวนเส้นยืน": 4, "เหล็กปลอก": "RB6", "ระยะเรียงปลอก s (ม.)": 0.15},
+        ])
+        edited_piers = st.data_editor(
+            default_piers, num_rows="dynamic", key=f"pier_table_pro_{st.session_state.reset_trigger}", use_container_width=True,
+            column_config={
+                "เหล็กยืน": st.column_config.SelectboxColumn(options=rebar_choices),
                 "เหล็กปลอก": st.column_config.SelectboxColumn(options=rebar_choices),
             }
         )
 
-    with st.expander("🧱 4. งานคานคอดินและคานชั้นบน (Beam Schedule)", expanded=False):
+    with st.expander("5. งานคานคอดินและคานชั้นบน (Beam Schedule)", expanded=False):
         default_beams = pd.DataFrame([
             {"ชั้น": "ชั้น 1 (Ground Floor)", "คาน": "", "ความกว้าง b (ม.)": 0.0, "ความลึก h (ม.)": 0.0, "ความยาวรวม (ม.)": 0.0, "พื้นที่ไม้แบบ (ตร.ม.)": 0.0, "เหล็กบน": "RB6", "จำนวนเส้นบน": 0, "เหล็กล่าง": "RB6", "จำนวนเส้นล่าง": 0, "เหล็กปลอก": "RB6", "ระยะเรียงปลอก s (ม.)": 0.0},
         ])
@@ -138,7 +149,7 @@ with tab1:
             }
         )
 
-    with st.expander("🏛️ 5. งานเสาชั้นบน (Column Schedule)", expanded=False):
+    with st.expander("6. งานเสาชั้นบน (Column Schedule)", expanded=False):
         default_columns = pd.DataFrame([
             {"ชั้น": "ชั้น 1 (Ground Floor)", "เสา": "", "ความกว้าง b (ม.)": 0.0, "ความลึก h (ม.)": 0.0, "ความสูง H (ม.)": 0.0, "จำนวนต้น": 0, "พื้นที่ไม้แบบ (ตร.ม.)": 0.0, "เหล็กยืน": "RB6", "จำนวนเส้นยืน": 0, "เหล็กปลอก": "RB6", "ระยะเรียงปลอก s (ม.)": 0.0},
         ])
@@ -151,7 +162,7 @@ with tab1:
             }
         )
 
-    with st.expander("⬛ 6. งานพื้น คสล. หล่อในที่ (Slab Schedule)", expanded=False):
+    with st.expander("7. งานพื้น คสล. หล่อในที่ (Slab Schedule)", expanded=False):
         default_slabs = pd.DataFrame([
             {"ชั้น": "ชั้น 1 (Ground Floor)", "พื้น": "", "พื้นที่ใช้งาน (ตร.ม.)": 0.0, "ความหนาพื้น t (ม.)": 0.0, "พื้นที่ไม้แบบรวม (ตร.ม.)": 0.0, "เหล็กเสริมพื้น": "RB6"},
         ])
@@ -163,7 +174,7 @@ with tab1:
             }
         )
 
-    with st.expander("🔲 7. งานพื้นสำเร็จรูป SP/PS (Prestressed Slab Schedule)", expanded=False):
+    with st.expander("8. งานพื้นสำเร็จรูป SP/PS (Prestressed Slab Schedule)", expanded=False):
         default_sp_slabs = pd.DataFrame([
             {"ชั้น": "ชั้น 2 (Second Floor)", "พื้น SP": "", "พื้นที่ใช้งาน (ตร.ม.)": 0.0, "ความหนา Topping (ม.)": 0.0, "เหล็กกันร้าว": "RB6", "พื้นที่ค้ำยัน (ตร.ม.)": 0.0},
         ])
@@ -237,15 +248,15 @@ if not edited_earthworks.empty:
                            (earth_vol * earth_price) + (sand_vol * sand_lab_price) + (lean_vol * lean_lab_price))
         except: continue
 
+# --- คำนวณงานฐานราก (Footings) ---
 if not edited_footings.empty:
     for idx, row in edited_footings.iterrows():
         try:
             if pd.isna(row.get("กว้าง B (ม.)")) or pd.isna(row.get("ยาว L (ม.)")) or pd.isna(row.get("หนา t (ม.)")) or pd.isna(row.get("จำนวน (ฐาน)")): continue
             b, l, t, qty = float(row["กว้าง B (ม.)"]), float(row["ยาว L (ม.)"]), float(row["หนา t (ม.)"]), int(row["จำนวน (ฐาน)"])
-            pier_h = float(row.get("ความสูงตอม่อ (ม.)", 1.00)) if pd.notna(row.get("ความสูงตอม่อ (ม.)")) else 1.00
             
             conc = (b * l * t * qty) * (1.0 + waste_concrete/100.0)
-            form = (float(row["พื้นที่ไม้แบบ (ตร.ม.)"]) if pd.notna(row.get("พื้นที่ไม้แบบ (ตร.ม.)")) else (2 * (b + l) * t * qty) + (4 * 0.20 * pier_h * qty)) * (1.0 + waste_formwork/100.0)
+            form = (float(row["พื้นที่ไม้แบบ (ตร.ม.)"]) if pd.notna(row.get("พื้นที่ไม้แบบ (ตร.ม.)")) else (2 * (b + l) * t * qty)) * (1.0 + waste_formwork/100.0)
             
             sum_concrete += conc
             sum_formwork += form
@@ -264,18 +275,43 @@ if not edited_footings.empty:
             dowel_qty = int(row.get("จำนวนเดือย", 4)) if pd.notna(row.get("จำนวนเดือย")) else 4
             dowel_kg = (dowel_qty * 1.20 * qty * rebar_unit_weights.get(dowel_size, 1.578)) * (1.0 + waste_rebar/100.0)
 
-            tie_size = str(row.get("เหล็กปลอก", "RB6"))
-            tie_sp = float(row.get("ระยะเรียงปลอก (ม.)", 0.15)) if pd.notna(row.get("ระยะเรียงปลอก (ม.)")) else 0.15
-            num_ties = int(pier_h / tie_sp) + 1 if tie_sp > 0 else 4
-            tie_kg = (num_ties * 0.80 * qty * rebar_unit_weights.get(tie_size, 0.222)) * (1.0 + waste_rebar/100.0)
-
             sum_rebar_by_size[mat_size] = sum_rebar_by_size.get(mat_size, 0.0) + mat_kg
             sum_rebar_by_size[dowel_size] = sum_rebar_by_size.get(dowel_size, 0.0) + dowel_kg
+            
+            footing_mat_cost = (conc * conc_mat_price) + (form * form_mat_price) + (mat_kg * rebar_prices[mat_size]["mat"]) + (dowel_kg * rebar_prices[dowel_size]["mat"])
+            footing_lab_cost = (conc * conc_lab_price) + (form * form_lab_price) + (mat_kg * rebar_prices[mat_size]["lab"]) + (dowel_kg * rebar_prices[dowel_size]["lab"])
+            add_floor_cost("ชั้น 1 (Ground Floor)", footing_mat_cost, footing_lab_cost)
+        except: continue
+
+# --- คำนวณงานเสาตอม่อ (Piers) ---
+if not edited_piers.empty:
+    for idx, row in edited_piers.iterrows():
+        try:
+            if pd.isna(row.get("ความกว้าง b (ม.)")) or pd.isna(row.get("ความลึก h (ม.)")) or pd.isna(row.get("ความสูง H (ม.)")) or pd.isna(row.get("จำนวนต้น")): continue
+            p_w, p_h, p_H, p_qty = float(row["ความกว้าง b (ม.)"]), float(row["ความลึก h (ม.)"]), float(row["ความสูง H (ม.)"]), int(row["จำนวนต้น"])
+            
+            p_conc = (p_w * p_h * p_H * p_qty) * (1.0 + waste_concrete/100.0)
+            p_form = (float(row["พื้นที่ไม้แบบ (ตร.ม.)"]) if pd.notna(row.get("พื้นที่ไม้แบบ (ตร.ม.)")) else (2 * (p_w + p_h) * p_H * p_qty)) * (1.0 + waste_formwork/100.0)
+            
+            sum_concrete += p_conc
+            sum_formwork += p_form
+            
+            main_size = str(row.get("เหล็กยืน", "DB12"))
+            main_n = int(row.get("จำนวนเส้นยืน", 4)) if pd.notna(row.get("จำนวนเส้นยืน")) else 4
+            main_kg = (p_H * main_n * p_qty * rebar_unit_weights.get(main_size, 0.888)) * (1.0 + waste_rebar/100.0)
+            
+            tie_size = str(row.get("เหล็กปลอก", "RB6"))
+            tie_sp = float(row.get("ระยะเรียงปลอก s (ม.)", 0.15)) if pd.notna(row.get("ระยะเรียงปลอก s (ม.)")) else 0.15
+            num_ties = int(p_H / tie_sp) + 1 if tie_sp > 0 else 1
+            tie_perim = (2 * (p_w - 0.08 + p_h - 0.08)) + 0.10
+            tie_kg = (num_ties * tie_perim * p_qty * rebar_unit_weights.get(tie_size, 0.222)) * (1.0 + waste_rebar/100.0)
+
+            sum_rebar_by_size[main_size] = sum_rebar_by_size.get(main_size, 0.0) + main_kg
             sum_rebar_by_size[tie_size] = sum_rebar_by_size.get(tie_size, 0.0) + tie_kg
             
-            footing_mat_cost = (conc * conc_mat_price) + (form * form_mat_price) + (mat_kg * rebar_prices[mat_size]["mat"]) + (dowel_kg * rebar_prices[dowel_size]["mat"]) + (tie_kg * rebar_prices[tie_size]["mat"])
-            footing_lab_cost = (conc * conc_lab_price) + (form * form_lab_price) + (mat_kg * rebar_prices[mat_size]["lab"]) + (dowel_kg * rebar_prices[dowel_size]["lab"]) + (tie_kg * rebar_prices[tie_size]["lab"])
-            add_floor_cost("ชั้น 1 (Ground Floor)", footing_mat_cost, footing_lab_cost)
+            pier_mat_cost = (p_conc * conc_mat_price) + (p_form * form_mat_price) + (main_kg * rebar_prices[main_size]["mat"]) + (tie_kg * rebar_prices[tie_size]["mat"])
+            pier_lab_cost = (p_conc * conc_lab_price) + (p_form * form_lab_price) + (main_kg * rebar_prices[main_size]["lab"]) + (tie_kg * rebar_prices[tie_size]["lab"])
+            add_floor_cost("ชั้น 1 (Ground Floor)", pier_mat_cost, pier_lab_cost)
         except: continue
 
 if not edited_beams.empty:
@@ -433,7 +469,7 @@ if sum_slab_conc > 0:
 
 f_mat = sum_formwork * form_mat_price
 f_lab = sum_formwork * form_lab_price
-boq_rows.append([str(item_no), f"ไม้แบบ (ฐานราก/คาน/เสา) (รวมเผื่อ {waste_formwork}%)", f"{sum_formwork:.2f}", "ตร.ม.", f"{form_mat_price:,.2f}", f"{f_mat:,.2f}", f"{form_lab_price:,.2f}", f"{f_lab:,.2f}", f"{f_mat + f_lab:,.2f}"])
+boq_rows.append([str(item_no), f"ไม้แบบ (ฐานราก/ตอม่อ/คาน/เสา) (รวมเผื่อ {waste_formwork}%)", f"{sum_formwork:.2f}", "ตร.ม.", f"{form_mat_price:,.2f}", f"{f_mat:,.2f}", f"{form_lab_price:,.2f}", f"{f_lab:,.2f}", f"{f_mat + f_lab:,.2f}"])
 item_no += 1
 
 slab_form_mat = sum_slab_form * form_mat_price
@@ -487,7 +523,7 @@ boq_columns = ["ลำดับที่", "รายการ", "จำนว�
 boq_df = pd.DataFrame(boq_rows, columns=boq_columns)
 
 with tab2:
-    st.subheader("📊 สรุปรายการประมาณราคา (Master BOQ พร้อม Waste Factor)")
+    st.subheader("สรุปรายการประมาณราคา (Master BOQ พร้อม Waste Factor)")
     
     m1, m2, m3 = st.columns(3)
     m1.metric("รวมค่าวัสดุทั้งหมด", f"{total_mat_cost:,.2f} บาท")
@@ -498,7 +534,7 @@ with tab2:
     st.dataframe(boq_df, use_container_width=True, hide_index=True)
 
 with tab3:
-    st.subheader("🏢 สรุปงบประมาณแยกตามชั้น")
+    st.subheader("สรุปงบประมาณแยกตามชั้น")
     st.write("ตารางแสดงยอดรวมค่าวัสดุและค่าแรงแยกตามชั้นที่ระบุในตารางกำหนดข้อมูลโครงการ")
     
     floor_summary_rows = []
@@ -516,7 +552,7 @@ with tab3:
     st.dataframe(floor_df, use_container_width=True, hide_index=True)
 
 with tab4:
-    st.subheader("📈 แผนภูมิวิเคราะห์สัดส่วนงบประมาณโครงสร้าง")
+    st.subheader("แผนภูมิวิเคราะห์สัดส่วนงบประมาณโครงสร้าง")
     chart_data = pd.DataFrame({
         "หมวดงาน": ["เสาเข็ม", "ดินขุด/ทราย/คอนกรีตหยาบ", "คอนกรีตโครงสร้างรวมพื้น", "ไม้แบบรวมพื้น", "เหล็กเสริม/ลวดผูก"],
         "งบประมาณ (บาท)": [
@@ -532,13 +568,14 @@ with tab4:
 
 # --- บันทึก / โหลดโปรเจกต์ (JSON Sidebar) ---
 st.sidebar.divider()
-st.sidebar.subheader("💾 ระบบบันทึกและโหลดโปรเจกต์")
+st.sidebar.subheader("ระบบบันทึกและโหลดโปรเจกต์")
 
 project_data = {
     "waste": {"concrete": waste_concrete, "rebar": waste_rebar, "formwork": waste_formwork},
     "piles": edited_piles.to_dict(orient="records"),
     "earthworks": edited_earthworks.to_dict(orient="records"),
     "footings": edited_footings.to_dict(orient="records"),
+    "piers": edited_piers.to_dict(orient="records"),
     "beams": edited_beams.to_dict(orient="records"),
     "columns": edited_columns.to_dict(orient="records"),
     "slabs": edited_slabs.to_dict(orient="records"),
@@ -547,7 +584,7 @@ project_data = {
 
 json_str = json.dumps(project_data, ensure_ascii=False, indent=4)
 st.sidebar.download_button(
-    label="📥 บันทึกโปรเจกต์ (JSON)",
+    label="บันทึกโปรเจกต์ (JSON)",
     data=json_str,
     file_name="buildquant_project.json",
     mime="application/json"
@@ -563,13 +600,14 @@ with pd.ExcelWriter(output, engine='openpyxl') as writer:
     edited_piles.to_excel(writer, index=False, sheet_name='Input_Piles')
     edited_earthworks.to_excel(writer, index=False, sheet_name='Input_Earthwork')
     edited_footings.to_excel(writer, index=False, sheet_name='Input_Footing')
+    edited_piers.to_excel(writer, index=False, sheet_name='Input_Pier')
     edited_beams.to_excel(writer, index=False, sheet_name='Input_Beam')
     edited_columns.to_excel(writer, index=False, sheet_name='Input_Column')
     edited_slabs.to_excel(writer, index=False, sheet_name='Input_Slab')
 excel_data = output.getvalue()
 
 st.sidebar.download_button(
-    label="📥 ดาวน์โหลดรายงาน BOQ ทั้งหมด (Excel)",
+    label="ดาวน์โหลดรายงาน BOQ ทั้งหมด (Excel)",
     data=excel_data,
     file_name="BuildQuant_Pro_Structural_BOQ.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
