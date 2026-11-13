@@ -5,13 +5,13 @@ import json
 
 st.set_page_config(page_title="Quantix - Structural BOQ", page_icon="🏗️", layout="wide")
 
-# --- โค้ด CSS บังคับฟอนต์ภาษาไทย (แก้ปัญหาสี่เหลี่ยมบน Streamlit Cloud) ---
+# --- โค้ด CSS บังคับฟอนต์ภาษาไทยมาตรฐาน ---
 st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap');
         
-        html, body, [class*="css"] {
-            font-family: 'Sarabun', sans-serif !important;
+        html, body, [class*="css"], .stApp, table, th, td, div, span, input, textarea, select {
+            font-family: 'Sarabun', 'Tahoma', sans-serif !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -45,7 +45,7 @@ floor_choices = ["ชั้น 1 (Ground Floor)", "ชั้น 2 (Second Floor)
 
 # --- Sidebar: ตั้งค่าราคาต่อหน่วยกลาง และ Waste Factor ---
 st.sidebar.header("⚙️ ตั้งค่าระบบและเปอร์เซ็นต์เผื่อเศษวัสดุ (Waste Factor)")
-with st.sidebar.expander("🛠️ ตั้งค่า Waste Factor (%)", expanded=True):
+with st.sidebar.expander("ตั้งค่า Waste Factor (%)", expanded=True):
     waste_concrete = st.number_input("เผื่อคอนกรีต (%):", min_value=0.0, max_value=20.0, value=0.0, step=1.0, key=f"wc_{st.session_state.reset_trigger}")
     waste_rebar = st.number_input("เผื่อเหล็กเสริม (%):", min_value=0.0, max_value=30.0, value=0.0, step=1.0, key=f"wr_{st.session_state.reset_trigger}")
     waste_formwork = st.number_input("เผื่อไม้แบบ (%):", min_value=0.0, max_value=20.0, value=0.0, step=1.0, key=f"wf_{st.session_state.reset_trigger}")
@@ -90,28 +90,28 @@ rebar_prices = {
 
 # --- สร้าง Tabs จัดระเบียบหน้าจอหลัก ---
 tab1, tab2, tab3, tab4 = st.tabs([
-    "📝 1. กำหนดข้อมูลโครงการ (Schedules)", 
-    "📊 2. สรุป Master BOQ", 
-    "🏢 3. แยกตามชั้น", 
-    "📈 4. วิเคราะห์ต้นทุน"
+    "1. กำหนดข้อมูลโครงการ (Schedules)", 
+    "2. สรุป Master BOQ", 
+    "3. แยกตามชั้น", 
+    "4. วิเคราะห์ต้นทุน"
 ])
 
 with tab1:
-    st.subheader("📋 ตารางกำหนดข้อมูลองค์อาคารและงานโครงสร้าง (รองรับการระบุชั้น)")
+    st.subheader("ตารางกำหนดข้อมูลองค์อาคารและงานโครงสร้าง (รองรับการระบุชั้น)")
     
-    with st.expander("📌 1. งานเสาเข็ม (Pile Schedule)", expanded=True):
+    with st.expander("1. งานเสาเข็ม (Pile Schedule)", expanded=True):
         default_piles = pd.DataFrame([
             {"ขนาดเสาเข็ม": "", "จำนวน (ต้น)": 0.0},
         ])
         edited_piles = st.data_editor(default_piles, num_rows="dynamic", key=f"pile_table_pro_{st.session_state.reset_trigger}", use_container_width=True)
 
-    with st.expander("🛠️ 2. งานดินขุด, งานใต้ดิน และระบบกันซึม", expanded=False):
+    with st.expander("2. งานดินขุด, งานใต้ดิน และระบบกันซึม", expanded=False):
         default_earthworks = pd.DataFrame([
             {"โซน/หลุม": "", "กว้าง (ม.)": 0.0, "ยาว (ม.)": 0.0, "ลึก (ม.)": 0.0, "จำนวนฐานราก": 0, "หนาทรายหยาบ (ม.)": 0.0, "หนาคอนกรีตหยาบ (ม.)": 0.0, "ต้องการกันซึม": False},
         ])
         edited_earthworks = st.data_editor(default_earthworks, num_rows="dynamic", key=f"earthwork_table_pro_{st.session_state.reset_trigger}", use_container_width=True)
 
-    with st.expander("🏗️ 3. งานฐานรากและเสาตอม่อ (Footing & Pier Schedule)", expanded=False):
+    with st.expander("3. งานฐานรากและเสาตอม่อ (Footing & Pier Schedule)", expanded=False):
         default_footings = pd.DataFrame([
             {"ฐานราก": "", "กว้าง B (ม.)": 0.0, "ยาว L (ม.)": 0.0, "หนา t (ม.)": 0.0, "ความสูงตอม่อ (ม.)": 0.0, "จำนวน (ฐาน)": 0, "พื้นที่ไม้แบบ (ตร.ม.)": 0.0, "เหล็กตะแกรง": "RB6", "ระยะเรียง @ (ม.)": 0.0, "จำนวนเดือย": 0, "เหล็กเดือย": "RB6", "เหล็กปลอก": "RB6", "ระยะเรียงปลอก (ม.)": 0.0},
         ])
@@ -124,7 +124,7 @@ with tab1:
             }
         )
 
-    with st.expander("🧱 4. งานคานคอดินและคานชั้นบน (Beam Schedule)", expanded=False):
+    with st.expander("4. งานคานคอดินและคานชั้นบน (Beam Schedule)", expanded=False):
         default_beams = pd.DataFrame([
             {"ชั้น": "ชั้น 1 (Ground Floor)", "คาน": "", "ความกว้าง b (ม.)": 0.0, "ความลึก h (ม.)": 0.0, "ความยาวรวม (ม.)": 0.0, "พื้นที่ไม้แบบ (ตร.ม.)": 0.0, "เหล็กบน": "RB6", "จำนวนเส้นบน": 0, "เหล็กล่าง": "RB6", "จำนวนเส้นล่าง": 0, "เหล็กปลอก": "RB6", "ระยะเรียงปลอก s (ม.)": 0.0},
         ])
@@ -138,7 +138,7 @@ with tab1:
             }
         )
 
-    with st.expander("🏛️ 5. งานเสาชั้นบน (Column Schedule)", expanded=False):
+    with st.expander("5. งานเสาชั้นบน (Column Schedule)", expanded=False):
         default_columns = pd.DataFrame([
             {"ชั้น": "ชั้น 1 (Ground Floor)", "เสา": "", "ความกว้าง b (ม.)": 0.0, "ความลึก h (ม.)": 0.0, "ความสูง H (ม.)": 0.0, "จำนวนต้น": 0, "พื้นที่ไม้แบบ (ตร.ม.)": 0.0, "เหล็กยืน": "RB6", "จำนวนเส้นยืน": 0, "เหล็กปลอก": "RB6", "ระยะเรียงปลอก s (ม.)": 0.0},
         ])
@@ -151,7 +151,7 @@ with tab1:
             }
         )
 
-    with st.expander("⬛ 6. งานพื้น คสล. หล่อในที่ (Slab Schedule)", expanded=False):
+    with st.expander("6. งานพื้น คสล. หล่อในที่ (Slab Schedule)", expanded=False):
         default_slabs = pd.DataFrame([
             {"ชั้น": "ชั้น 1 (Ground Floor)", "พื้น": "", "พื้นที่ใช้งาน (ตร.ม.)": 0.0, "ความหนาพื้น t (ม.)": 0.0, "พื้นที่ไม้แบบรวม (ตร.ม.)": 0.0, "เหล็กเสริมพื้น": "RB6"},
         ])
@@ -163,7 +163,7 @@ with tab1:
             }
         )
 
-    with st.expander("🔲 7. งานพื้นสำเร็จรูป SP/PS (Prestressed Slab Schedule)", expanded=False):
+    with st.expander("7. งานพื้นสำเร็จรูป SP/PS (Prestressed Slab Schedule)", expanded=False):
         default_sp_slabs = pd.DataFrame([
             {"ชั้น": "ชั้น 2 (Second Floor)", "พื้น SP": "", "พื้นที่ใช้งาน (ตร.ม.)": 0.0, "ความหนา Topping (ม.)": 0.0, "เหล็กกันร้าว": "RB6", "พื้นที่ค้ำยัน (ตร.ม.)": 0.0},
         ])
@@ -487,7 +487,7 @@ boq_columns = ["ลำดับที่", "รายการ", "จำนว�
 boq_df = pd.DataFrame(boq_rows, columns=boq_columns)
 
 with tab2:
-    st.subheader("📊 สรุปรายการประมาณราคา (Master BOQ พร้อม Waste Factor)")
+    st.subheader("สรุปรายการประมาณราคา (Master BOQ พร้อม Waste Factor)")
     
     m1, m2, m3 = st.columns(3)
     m1.metric("รวมค่าวัสดุทั้งหมด", f"{total_mat_cost:,.2f} บาท")
@@ -498,7 +498,7 @@ with tab2:
     st.dataframe(boq_df, use_container_width=True, hide_index=True)
 
 with tab3:
-    st.subheader("🏢 สรุปงบประมาณแยกตามชั้น")
+    st.subheader("สรุปงบประมาณแยกตามชั้น")
     st.write("ตารางแสดงยอดรวมค่าวัสดุและค่าแรงแยกตามชั้นที่ระบุในตารางกำหนดข้อมูลโครงการ")
     
     floor_summary_rows = []
@@ -516,7 +516,7 @@ with tab3:
     st.dataframe(floor_df, use_container_width=True, hide_index=True)
 
 with tab4:
-    st.subheader("📈 แผนภูมิวิเคราะห์สัดส่วนงบประมาณโครงสร้าง")
+    st.subheader("แผนภูมิวิเคราะห์สัดส่วนงบประมาณโครงสร้าง")
     chart_data = pd.DataFrame({
         "หมวดงาน": ["เสาเข็ม", "ดินขุด/ทราย/คอนกรีตหยาบ", "คอนกรีตโครงสร้างรวมพื้น", "ไม้แบบรวมพื้น", "เหล็กเสริม/ลวดผูก"],
         "งบประมาณ (บาท)": [
@@ -532,7 +532,7 @@ with tab4:
 
 # --- บันทึก / โหลดโปรเจกต์ (JSON Sidebar) ---
 st.sidebar.divider()
-st.sidebar.subheader("💾 ระบบบันทึกและโหลดโปรเจกต์")
+st.sidebar.subheader("ระบบบันทึกและโหลดโปรเจกต์")
 
 project_data = {
     "waste": {"concrete": waste_concrete, "rebar": waste_rebar, "formwork": waste_formwork},
@@ -547,7 +547,7 @@ project_data = {
 
 json_str = json.dumps(project_data, ensure_ascii=False, indent=4)
 st.sidebar.download_button(
-    label="📥 บันทึกโปรเจกต์ (JSON)",
+    label="บันทึกโปรเจกต์ (JSON)",
     data=json_str,
     file_name="buildquant_project.json",
     mime="application/json"
@@ -569,7 +569,7 @@ with pd.ExcelWriter(output, engine='openpyxl') as writer:
 excel_data = output.getvalue()
 
 st.sidebar.download_button(
-    label="📥 ดาวน์โหลดรายงาน BOQ ทั้งหมด (Excel)",
+    label="ดาวน์โหลดรายงาน BOQ ทั้งหมด (Excel)",
     data=excel_data,
     file_name="BuildQuant_Pro_Structural_BOQ.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
