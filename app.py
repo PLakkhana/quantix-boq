@@ -5,14 +5,13 @@ import json
 
 st.set_page_config(page_title="Quantix - Structural BOQ", page_icon="🏗️", layout="wide")
 
-# --- โค้ด CSS บังคับฟอนต์ภาษาไทย (แบบครอบคลุมและมี Font Fallback) ---
+# --- โค้ด CSS บังคับฟอนต์ภาษาไทยและจัดแต่ง UI ---
 st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap');
         
-        /* บังคับทุก Element ในหน้าเว็บและตารางให้ใช้ Sarabun และฟอนต์ไทยมาตรฐาน */
         html, body, [class*="css"], .stApp, table, th, td, div, span, input, textarea, select {
-            font-family: 'Sarabun', 'Tahoma', 'Cordia New', sans-serif !important;
+            font-family: 'Sarabun', 'Tahoma', sans-serif !important;
         }
     </style>
 """, unsafe_allow_html=True)
