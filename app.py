@@ -21,6 +21,13 @@ if st.sidebar.button("🔄 รีเซ็ตตัวเลขและตา�
     reset_all_data()
     st.sidebar.success("เคลียร์ตัวเลขและรีเซ็ตข้อมูลทั้งหมดเป็น 0 เรียบร้อยแล้ว!")
 
+# --- Sidebar: ลิงก์อ้างอิงราคากลางและค่าแรง ---
+st.sidebar.divider()
+st.sidebar.subheader("🔗 แหล่งอ้างอิงราคากลาง")
+st.sidebar.markdown("[📊 ราคาวัสดุก่อสร้าง (พาณิชย์)](https://index.tpso.go.th/construction-material-prices/prices-building-materials)")
+st.sidebar.markdown("[👷‍♂️ ราคากลางค่าแรงงาน (โยธาไทย)](https://www.yotathai.com/passadu/w480)")
+st.sidebar.divider()
+
 # --- ตัวเลือกขนาดเหล็กสำหรับ Dropdown ---
 rebar_choices = ["RB6", "RB9", "DB12", "DB16", "DB20", "DB25"]
 floor_choices = ["ชั้น 1 (Ground Floor)", "ชั้น 2 (Second Floor)", "ชั้น 3 (Third Floor)", "ชั้นดาดฟ้า (Roof)"]
@@ -83,26 +90,23 @@ with tab1:
     
     with st.expander("📌 1. งานเสาเข็ม (Pile Schedule)", expanded=True):
         default_piles = pd.DataFrame([
-            {"ชั้น": "ชั้น 1 (Ground Floor)", "ขนาดเสาเข็ม": "", "จำนวน (ต้น)": 0.0},
+            {"ขนาดเสาเข็ม": "", "จำนวน (ต้น)": 0.0},
         ])
-        edited_piles = st.data_editor(default_piles, num_rows="dynamic", key=f"pile_table_pro_{st.session_state.reset_trigger}", use_container_width=True,
-            column_config={"ชั้น/โซน": st.column_config.SelectboxColumn(options=floor_choices)})
+        edited_piles = st.data_editor(default_piles, num_rows="dynamic", key=f"pile_table_pro_{st.session_state.reset_trigger}", use_container_width=True)
 
     with st.expander("🛠️ 2. งานดินขุด, งานใต้ดิน และระบบกันซึม", expanded=False):
         default_earthworks = pd.DataFrame([
-            {"ชั้น": "ชั้น 1 (Ground Floor)", "โซน/หลุม": "", "กว้าง (ม.)": 0.0, "ยาว (ม.)": 0.0, "ลึก (ม.)": 0.0, "จำนวนฐานราก": 0, "หนาทรายหยาบ (ม.)": 0.0, "หนาคอนกรีตหยาบ (ม.)": 0.0, "ต้องการกันซึม": False},
+            {"โซน/หลุม": "", "กว้าง (ม.)": 0.0, "ยาว (ม.)": 0.0, "ลึก (ม.)": 0.0, "จำนวนฐานราก": 0, "หนาทรายหยาบ (ม.)": 0.0, "หนาคอนกรีตหยาบ (ม.)": 0.0, "ต้องการกันซึม": False},
         ])
-        edited_earthworks = st.data_editor(default_earthworks, num_rows="dynamic", key=f"earthwork_table_pro_{st.session_state.reset_trigger}", use_container_width=True,
-            column_config={"ชั้น": st.column_config.SelectboxColumn(options=floor_choices)})
+        edited_earthworks = st.data_editor(default_earthworks, num_rows="dynamic", key=f"earthwork_table_pro_{st.session_state.reset_trigger}", use_container_width=True)
 
     with st.expander("🏗️ 3. งานฐานรากและเสาตอม่อ (Footing & Pier Schedule)", expanded=False):
         default_footings = pd.DataFrame([
-            {"ชั้น": "ชั้น 1 (Ground Floor)", "ฐานราก": "", "กว้าง B (ม.)": 0.0, "ยาว L (ม.)": 0.0, "หนา t (ม.)": 0.0, "ความสูงตอม่อ (ม.)": 0.0, "จำนวน (ฐาน)": 0, "พื้นที่ไม้แบบ (ตร.ม.)": 0.0, "เหล็กตะแกรง": "RB6", "ระยะเรียง @ (ม.)": 0.0, "จำนวนเดือย": 0, "เหล็กเดือย": "RB6", "เหล็กปลอก": "RB6", "ระยะเรียงปลอก (ม.)": 0.0},
+            {"ฐานราก": "", "กว้าง B (ม.)": 0.0, "ยาว L (ม.)": 0.0, "หนา t (ม.)": 0.0, "ความสูงตอม่อ (ม.)": 0.0, "จำนวน (ฐาน)": 0, "พื้นที่ไม้แบบ (ตร.ม.)": 0.0, "เหล็กตะแกรง": "RB6", "ระยะเรียง @ (ม.)": 0.0, "จำนวนเดือย": 0, "เหล็กเดือย": "RB6", "เหล็กปลอก": "RB6", "ระยะเรียงปลอก (ม.)": 0.0},
         ])
         edited_footings = st.data_editor(
             default_footings, num_rows="dynamic", key=f"footing_table_pro_{st.session_state.reset_trigger}", use_container_width=True,
             column_config={
-                "ชั้น": st.column_config.SelectboxColumn(options=floor_choices),
                 "เหล็กตะแกรง": st.column_config.SelectboxColumn(options=rebar_choices),
                 "เหล็กเดือย": st.column_config.SelectboxColumn(options=rebar_choices),
                 "เหล็กปลอก": st.column_config.SelectboxColumn(options=rebar_choices),
@@ -194,9 +198,8 @@ if not edited_piles.empty:
         try:
             if pd.isna(row.get("จำนวน (ต้น)")): continue
             qty = float(row["จำนวน (ต้น)"])
-            flr = row.get("ชั้น", "ชั้น 1 (Ground Floor)")
             sum_piles_qty += qty
-            add_floor_cost(flr, qty * pile_mat_price, qty * pile_lab_price)
+            add_floor_cost("ชั้น 1 (Ground Floor)", qty * pile_mat_price, qty * pile_lab_price)
         except: continue
 
 if not edited_earthworks.empty:
@@ -204,7 +207,6 @@ if not edited_earthworks.empty:
         try:
             if pd.isna(row.get("กว้าง (ม.)")) or pd.isna(row.get("ยาว (ม.)")) or pd.isna(row.get("ลึก (ม.)")) or pd.isna(row.get("จำนวนฐานราก")): continue
             ew_w, ew_l, ew_d, e_qty = float(row["กว้าง (ม.)"]), float(row["ยาว (ม.)"]), float(row["ลึก (ม.)"]), int(row["จำนวนฐานราก"])
-            flr = row.get("ชั้น", "ชั้น 1 (Ground Floor)")
             sand_t = float(row.get("หนาทรายหยาบ (ม.)", 0.05)) if pd.notna(row.get("หนาทรายหยาบ (ม.)")) else 0.05
             lean_t = float(row.get("หนาคอนกรีตหยาบ (ม.)", 0.05)) if pd.notna(row.get("หนาคอนกรีตหยาบ (ม.)")) else 0.05
             has_wp = bool(row.get("ต้องการกันซึม", False))
@@ -219,7 +221,7 @@ if not edited_earthworks.empty:
             sum_lean += lean_vol
             sum_waterproof += wp_area
             
-            add_floor_cost(flr, 
+            add_floor_cost("ชั้น 1 (Ground Floor)", 
                            (sand_vol * sand_mat_price) + (lean_vol * lean_mat_price) + (wp_area * waterproof_mat_price), 
                            (earth_vol * earth_price) + (sand_vol * sand_lab_price) + (lean_vol * lean_lab_price))
         except: continue
@@ -229,7 +231,6 @@ if not edited_footings.empty:
         try:
             if pd.isna(row.get("กว้าง B (ม.)")) or pd.isna(row.get("ยาว L (ม.)")) or pd.isna(row.get("หนา t (ม.)")) or pd.isna(row.get("จำนวน (ฐาน)")): continue
             b, l, t, qty = float(row["กว้าง B (ม.)"]), float(row["ยาว L (ม.)"]), float(row["หนา t (ม.)"]), int(row["จำนวน (ฐาน)"])
-            flr = row.get("ชั้น", "ชั้น 1 (Ground Floor)")
             pier_h = float(row.get("ความสูงตอม่อ (ม.)", 1.00)) if pd.notna(row.get("ความสูงตอม่อ (ม.)")) else 1.00
             
             conc = (b * l * t * qty) * (1.0 + waste_concrete/100.0)
@@ -263,7 +264,7 @@ if not edited_footings.empty:
             
             footing_mat_cost = (conc * conc_mat_price) + (form * form_mat_price) + (mat_kg * rebar_prices[mat_size]["mat"]) + (dowel_kg * rebar_prices[dowel_size]["mat"]) + (tie_kg * rebar_prices[tie_size]["mat"])
             footing_lab_cost = (conc * conc_lab_price) + (form * form_lab_price) + (mat_kg * rebar_prices[mat_size]["lab"]) + (dowel_kg * rebar_prices[dowel_size]["lab"]) + (tie_kg * rebar_prices[tie_size]["lab"])
-            add_floor_cost(flr, footing_mat_cost, footing_lab_cost)
+            add_floor_cost("ชั้น 1 (Ground Floor)", footing_mat_cost, footing_lab_cost)
         except: continue
 
 if not edited_beams.empty:
