@@ -17,7 +17,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("🏗️ Quantix: ระบบคำนวณ BOQ โครงสร้างอาคาร")
-st.write("ระบบถอดปริมาณ ประเมินราคางานโครงสร้าง (คำนวณคอนกรีต ไม้แบบ และน้ำหนักเหล็กอัตโนมัติ)")
+st.write("ระบบถอดปริมาณ ประเมินราคางานโครงสร้าง (คำนวณคอนกรีต ไม้แบบ และน้ำหนักเหล็กอัตโนมัติทุกหมวด)")
 
 # --- ฟังก์ชันจัดการ Session State สำหรับปุ่มรีเซ็ตค่าทั้งหมด ---
 if "reset_trigger" not in st.session_state:
@@ -141,15 +141,15 @@ with tab1:
                 "งอขอ Hook (ม.)": 0.10,
                 "เหล็กตะแกรง": "DB12",
                 "ระยะเรียง @ (ม.)": 0.20,
-                "จำนวนเดือย (เส้น)": 4,
-                "เหล็กเดือย": "DB16",
+                "เหล็กเสริม": "DB16",
+                "จำนวนเส้นเหล็กเสริม": 4,
             },
         ])
         edited_footings = st.data_editor(
             default_footings, num_rows="dynamic", key=f"footing_table_pro_{st.session_state.reset_trigger}", use_container_width=True,
             column_config={
                 "เหล็กตะแกรง": st.column_config.SelectboxColumn(options=rebar_choices),
-                "เหล็กเดือย": st.column_config.SelectboxColumn(options=rebar_choices),
+                "เหล็กเสริม": st.column_config.SelectboxColumn(options=rebar_choices),
             }
         )
         footing_preview_box = st.empty()
@@ -300,7 +300,13 @@ sum_piles_qty = 0.0
 sum_pile_total_len = 0.0
 sum_rebar_by_size = {k: 0.0 for k in rebar_unit_weights.keys()}
 
-# ตัวแปรย่อยสำหรับแสดงสรุปใต้แต่ละตารางใน Tab 1
+footing_calc_rows = []
+pier_calc_rows = []
+beam_calc_rows = []
+col_calc_rows = []
+slab_calc_rows = []
+sp_calc_rows = []
+
 sub_footing_conc = 0.0
 sub_footing_rebar = 0.0
 sub_pier_conc = 0.0
@@ -389,16 +395,23 @@ if not edited_footings.empty:
             mat_len = ((n_b * len_b) + (n_l * len_l)) * qty
             mat_kg = (mat_len * rebar_unit_weights.get(mat_size, 0.888)) * (1.0 + waste_rebar/100.0)
 
-            dowel_size = str(row.get("เหล็กเดือย", "DB16"))
-            dowel_qty = int(row.get("จำนวนเดือย (เส้น)", 4)) if pd.notna(row.get("จำนวนเดือย (เส้น)")) else 4
-            dowel_kg = (dowel_qty * 1.20 * qty * rebar_unit_weights.get(dowel_size, 1.578)) * (1.0 + waste_rebar/100.0)
+            rebar_size = str(row.get("เหล็กเสริม", "DB16"))
+            rebar_qty = int(row.get("จำนวนเส้นเหล็กเสริม", 4)) if pd.notna(row.get("จำนวนเส้นเหล็กเสริม")) else 4
+            rebar_kg = (rebar_qty * 1.20 * qty * rebar_unit_weights.get(rebar_size, 1.578)) * (1.0 + waste_rebar/100.0)
 
             sum_rebar_by_size[mat_size] = sum_rebar_by_size.get(mat_size, 0.0) + mat_kg
-            sum_rebar_by_size[dowel_size] = sum_rebar_by_size.get(dowel_size, 0.0) + dowel_kg
-            sub_footing_rebar += (mat_kg + dowel_kg)
+            sum_rebar_by_size[rebar_size] = sum_rebar_by_size.get(rebar_size, 0.0) + rebar_kg
+            sub_footing_rebar += (mat_kg + rebar_kg)
             
-            footing_mat_cost = (conc * conc_mat_price) + (form * form_mat_price) + (mat_kg * rebar_prices[mat_size]["mat"]) + (dowel_kg * rebar_prices[dowel_size]["mat"])
-            footing_lab_cost = (conc * conc_lab_price) + (form * form_lab_price) + (mat_kg * rebar_prices[mat_size]["lab"]) + (dowel_kg * rebar_prices[dowel_size]["lab"])
+            footing_calc_rows.append({
+                "รหัสฐานราก": str(row.get("รหัสฐานราก", "") or f"F{idx+1}"),
+                "คอนกรีต (ลบ.ม.)": round(conc, 3),
+                "ไม้แบบ (ตร.ม.)": round(form, 2),
+                "น้ำหนักเหล็กรวม (กก.)": round(mat_kg + rebar_kg, 2),
+            })
+
+            footing_mat_cost = (conc * conc_mat_price) + (form * form_mat_price) + (mat_kg * rebar_prices[mat_size]["mat"]) + (rebar_kg * rebar_prices[rebar_size]["mat"])
+            footing_lab_cost = (conc * conc_lab_price) + (form * form_lab_price) + (mat_kg * rebar_prices[mat_size]["lab"]) + (rebar_kg * rebar_prices[rebar_size]["lab"])
             add_floor_cost("ชั้น 1 (Ground Floor)", footing_mat_cost, footing_lab_cost)
         except: continue
 
@@ -433,6 +446,13 @@ if not edited_piers.empty:
             sum_rebar_by_size[tie_size] = sum_rebar_by_size.get(tie_size, 0.0) + tie_kg
             sub_pier_rebar += (main_kg + tie_kg)
             
+            pier_calc_rows.append({
+                "รหัสเสาตอม่อ": str(row.get("รหัสเสาตอม่อ", "") or f"P-F{idx+1}"),
+                "คอนกรีต (ลบ.ม.)": round(p_conc, 3),
+                "ไม้แบบ (ตร.ม.)": round(p_form, 2),
+                "น้ำหนักเหล็กรวม (กก.)": round(main_kg + tie_kg, 2),
+            })
+
             pier_mat_cost = (p_conc * conc_mat_price) + (p_form * form_mat_price) + (main_kg * rebar_prices[main_size]["mat"]) + (tie_kg * rebar_prices[tie_size]["mat"])
             pier_lab_cost = (p_conc * conc_lab_price) + (p_form * form_lab_price) + (main_kg * rebar_prices[main_size]["lab"]) + (tie_kg * rebar_prices[tie_size]["lab"])
             add_floor_cost("ชั้น 1 (Ground Floor)", pier_mat_cost, pier_lab_cost)
@@ -475,6 +495,14 @@ if not edited_beams.empty:
             sum_rebar_by_size[stir_size] = sum_rebar_by_size.get(stir_size, 0.0) + stir_kg
             sub_beam_rebar += (top_kg + bot_kg + stir_kg)
             
+            beam_calc_rows.append({
+                "ชั้น": str(flr),
+                "รหัสคาน": str(row.get("รหัสคาน", "") or f"B{idx+1}"),
+                "คอนกรีต (ลบ.ม.)": round(b_conc, 3),
+                "ไม้แบบ (ตร.ม.)": round(b_form, 2),
+                "น้ำหนักเหล็กรวม (กก.)": round(top_kg + bot_kg + stir_kg, 2),
+            })
+
             beam_mat_cost = (b_conc * conc_mat_price) + (b_form * form_mat_price) + (top_kg * rebar_prices[top_size]["mat"]) + (bot_kg * rebar_prices[bot_size]["mat"]) + (stir_kg * rebar_prices[stir_size]["mat"])
             beam_lab_cost = (b_conc * conc_lab_price) + (b_form * form_lab_price) + (top_kg * rebar_prices[top_size]["lab"]) + (bot_kg * rebar_prices[bot_size]["lab"]) + (stir_kg * rebar_prices[stir_size]["lab"])
             add_floor_cost(flr, beam_mat_cost, beam_lab_cost)
@@ -512,6 +540,14 @@ if not edited_columns.empty:
             sum_rebar_by_size[col_stir_size] = sum_rebar_by_size.get(col_stir_size, 0.0) + col_stir_kg
             sub_col_rebar += (main_kg + col_stir_kg)
             
+            col_calc_rows.append({
+                "ชั้น": str(flr),
+                "รหัสเสา": str(row.get("รหัสเสา", "") or f"C{idx+1}"),
+                "คอนกรีต (ลบ.ม.)": round(c_conc, 3),
+                "ไม้แบบ (ตร.ม.)": round(c_form, 2),
+                "น้ำหนักเหล็กรวม (กก.)": round(main_kg + col_stir_kg, 2),
+            })
+
             col_mat_cost = (c_conc * conc_mat_price) + (c_form * form_mat_price) + (main_kg * rebar_prices[main_size]["mat"]) + (col_stir_kg * rebar_prices[col_stir_size]["mat"])
             col_lab_cost = (c_conc * conc_lab_price) + (c_form * form_lab_price) + (main_kg * rebar_prices[main_size]["lab"]) + (col_stir_kg * rebar_prices[col_stir_size]["lab"])
             add_floor_cost(flr, col_mat_cost, col_lab_cost)
@@ -535,6 +571,14 @@ if not edited_slabs.empty:
             sum_rebar_by_size[slab_rebar_size] = sum_rebar_by_size.get(slab_rebar_size, 0.0) + slab_rebar_kg
             sub_slab_rebar += slab_rebar_kg
             
+            slab_calc_rows.append({
+                "ชั้น": str(flr),
+                "รหัสพื้น": str(row.get("รหัสพื้น", "") or f"S{idx+1}"),
+                "คอนกรีตพื้น (ลบ.ม.)": round(s_conc, 3),
+                "ไม้แบบพื้น (ตร.ม.)": round(slab_form_area, 2),
+                "น้ำหนักเหล็กรวม (กก.)": round(slab_rebar_kg, 2),
+            })
+
             slab_mat_cost = (s_conc * conc_mat_price) + (slab_form_area * form_mat_price) + (slab_rebar_kg * rebar_prices[slab_rebar_size]["mat"])
             slab_lab_cost = (s_conc * slab_conc_lab_price) + (slab_form_area * slab_form_lab_price) + (slab_rebar_kg * rebar_prices[slab_rebar_size]["lab"])
             add_floor_cost(flr, slab_mat_cost, slab_lab_cost)
@@ -562,20 +606,53 @@ if not edited_sp_slabs.empty:
             sum_rebar_by_size[anti_crack_size] = sum_rebar_by_size.get(anti_crack_size, 0.0) + anti_crack_kg
             sub_sp_rebar += anti_crack_kg
             
+            sp_calc_rows.append({
+                "ชั้น": str(flr),
+                "รหัสพื้น SP": str(row.get("รหัสพื้น SP", "") or f"SP{idx+1}"),
+                "พื้นที่ SP (ตร.ม.)": round(sp_area, 2),
+                "คอนกรีต Topping (ลบ.ม.)": round(sp_conc, 3),
+                "เหล็กกันร้าว (กก.)": round(anti_crack_kg, 2),
+                "พื้นที่ค้ำยัน (ตร.ม.)": round(shoring_area, 2),
+            })
+
             sp_mat_cost = (sp_area * sp_slab_price) + (sp_conc * conc_mat_price) + (anti_crack_kg * rebar_prices[anti_crack_size]["mat"]) + (shoring_area * shoring_mat_price)
             sp_lab_cost = (sp_conc * conc_lab_price) + (anti_crack_kg * rebar_prices[anti_crack_size]["lab"]) + (shoring_area * shoring_lab_price)
             add_floor_cost(flr, sp_mat_cost, sp_lab_cost)
         except: continue
 
-# แสดงผลสรุปปริมาณคำนวณอัตโนมัติใต้แต่ละหมวดใน Tab 1
-pile_preview_box.caption(f"ผลคำนวณ: เสาเข็มรวม **{sum_piles_qty:,.2f} ต้น** | ความยาวเสาเข็มรวม **{sum_pile_total_len:,.2f} ม.**")
-earth_preview_box.caption(f"ผลคำนวณ: ดินขุด **{sum_earthwork:,.2f} ลบ.ม.** | ดินถมกลับ **{sum_backfill:,.2f} ลบ.ม.** | ทรายหยาบ **{sum_sand:,.3f} ลบ.ม.** | คอนกรีตหยาบ **{sum_lean:,.3f} ลบ.ม.** | กันซึม **{sum_waterproof:,.2f} ตร.ม.**")
-footing_preview_box.caption(f"ผลคำนวณฐานราก: คอนกรีต **{sub_footing_conc:,.3f} ลบ.ม.** | ไม้แบบ **{sum_footing_form:,.2f} ตร.ม.** | น้ำหนักเหล็กรวม **{sub_footing_rebar:,.2f} กก.**")
-pier_preview_box.caption(f"ผลคำนวณเสาตอม่อ: คอนกรีต **{sub_pier_conc:,.3f} ลบ.ม.** | ไม้แบบ **{sum_pier_form:,.2f} ตร.ม.** | น้ำหนักเหล็กรวม **{sub_pier_rebar:,.2f} กก.**")
-beam_preview_box.caption(f"ผลคำนวณคาน: คอนกรีต **{sub_beam_conc:,.3f} ลบ.ม.** | ไม้แบบ **{sum_beam_form:,.2f} ตร.ม.** | น้ำหนักเหล็กรวม **{sub_beam_rebar:,.2f} กก.**")
-column_preview_box.caption(f"ผลคำนวณเสาชั้นบน: คอนกรีต **{sub_col_conc:,.3f} ลบ.ม.** | ไม้แบบ **{sum_column_form:,.2f} ตร.ม.** | น้ำหนักเหล็กรวม **{sub_col_rebar:,.2f} กก.**")
-slab_preview_box.caption(f"ผลคำนวณพื้น คสล.: คอนกรีต **{sum_slab_conc:,.3f} ลบ.ม.** | ไม้แบบ **{sum_slab_form:,.2f} ตร.ม.** | น้ำหนักเหล็กรวม **{sub_slab_rebar:,.2f} กก.**")
-sp_preview_box.caption(f"ผลคำนวณพื้น SP/PS: พื้น SP **{sum_sp_area:,.2f} ตร.ม.** | คอนกรีต Topping **{sub_sp_conc:,.3f} ลบ.ม.** | เหล็กกันร้าว **{sub_sp_rebar:,.2f} กก.** | ค้ำยัน **{sum_shoring_area:,.2f} ตร.ม.**")
+# แสดงตารางผลลัพธ์คำนวณอัตโนมัติ (รวมไม้แบบ คอนกรีต และเหล็ก) ใต้แต่ละหมวดใน Tab 1
+pile_preview_box.info(f"📌 เสาเข็มรวม: **{sum_piles_qty:,.2f} ต้น** | ความยาวรวม: **{sum_pile_total_len:,.2f} ม.**")
+earth_preview_box.info(f"🛠️ ดินขุด: **{sum_earthwork:,.2f} ลบ.ม.** | ดินถมกลับ: **{sum_backfill:,.2f} ลบ.ม.** | ทรายหยาบ: **{sum_sand:,.3f} ลบ.ม.** | คอนกรีตหยาบ: **{sum_lean:,.3f} ลบ.ม.** | กันซึม: **{sum_waterproof:,.2f} ตร.ม.**")
+
+with footing_preview_box.container():
+    st.markdown(f"**ผลคำนวณฐานราก:** คอนกรีต **{sub_footing_conc:,.3f} ลบ.ม.** | **ไม้แบบ {sum_footing_form:,.2f} ตร.ม.** | เหล็กเสริมรวม **{sub_footing_rebar:,.2f} กก.**")
+    if footing_calc_rows:
+        st.dataframe(pd.DataFrame(footing_calc_rows), use_container_width=True, hide_index=True)
+
+with pier_preview_box.container():
+    st.markdown(f"**ผลคำนวณเสาตอม่อ:** คอนกรีต **{sub_pier_conc:,.3f} ลบ.ม.** | **ไม้แบบ {sum_pier_form:,.2f} ตร.ม.** | เหล็กรวม **{sub_pier_rebar:,.2f} กก.**")
+    if pier_calc_rows:
+        st.dataframe(pd.DataFrame(pier_calc_rows), use_container_width=True, hide_index=True)
+
+with beam_preview_box.container():
+    st.markdown(f"**ผลคำนวณคาน:** คอนกรีต **{sub_beam_conc:,.3f} ลบ.ม.** | **ไม้แบบ {sum_beam_form:,.2f} ตร.ม.** | เหล็กรวม **{sub_beam_rebar:,.2f} กก.**")
+    if beam_calc_rows:
+        st.dataframe(pd.DataFrame(beam_calc_rows), use_container_width=True, hide_index=True)
+
+with column_preview_box.container():
+    st.markdown(f"**ผลคำนวณเสาชั้นบน:** คอนกรีต **{sub_col_conc:,.3f} ลบ.ม.** | **ไม้แบบ {sum_column_form:,.2f} ตร.ม.** | เหล็กรวม **{sub_col_rebar:,.2f} กก.**")
+    if col_calc_rows:
+        st.dataframe(pd.DataFrame(col_calc_rows), use_container_width=True, hide_index=True)
+
+with slab_preview_box.container():
+    st.markdown(f"**ผลคำนวณพื้น คสล.:** คอนกรีต **{sum_slab_conc:,.3f} ลบ.ม.** | **ไม้แบบ {sum_slab_form:,.2f} ตร.ม.** | เหล็กรวม **{sub_slab_rebar:,.2f} กก.**")
+    if slab_calc_rows:
+        st.dataframe(pd.DataFrame(slab_calc_rows), use_container_width=True, hide_index=True)
+
+with sp_preview_box.container():
+    st.markdown(f"**ผลคำนวณพื้น SP/PS:** พื้น SP **{sum_sp_area:,.2f} ตร.ม.** | Topping **{sub_sp_conc:,.3f} ลบ.ม.** | เหล็กกันร้าว **{sub_sp_rebar:,.2f} กก.** | ค้ำยัน **{sum_shoring_area:,.2f} ตร.ม.**")
+    if sp_calc_rows:
+        st.dataframe(pd.DataFrame(sp_calc_rows), use_container_width=True, hide_index=True)
 
 sum_formwork = sum_footing_form + sum_pier_form + sum_beam_form + sum_column_form
 
