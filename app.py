@@ -537,89 +537,101 @@ if not edited_sp_slabs.empty:
 
 sum_formwork = sum_footing_form + sum_pier_form + sum_beam_form + sum_column_form
 
-# --- สร้าง Master BOQ Rows (ใส่ลำดับ 1, 2, 3... ต่อเนื่องทุกแถวโดยไม่ใช้ global) ---
+# --- สร้าง Master BOQ Rows (แสดงแยกหมวดหมู่ชัดเจน 1-6) ---
 boq_rows = []
-
-def add_boq_row(desc, qty_str, unit, mat_u, mat_tot, lab_u, lab_tot, total_cost):
-    boq_rows.append([str(len(boq_rows) + 1), desc, qty_str, unit, mat_u, mat_tot, lab_u, lab_tot, total_cost])
+item_no = 1
 
 # หมวด 1: เสาเข็ม
-add_boq_row("หมวด 1: งานเสาเข็ม", "", "", "", "", "", "", "", "")
+boq_rows.append(["หมวด 1", "งานเสาเข็ม", "", "", "", "", "", "", ""])
 if sum_piles_qty > 0:
     pile_m = sum_piles_qty * pile_mat_price
     pile_l = sum_piles_qty * pile_lab_price
-    add_boq_row(f"เสาเข็มคอนกรีต (รวมความยาว {sum_pile_total_len:.2f} ม.)", f"{sum_piles_qty:.2f}", "ต้น", f"{pile_mat_price:,.2f}", f"{pile_m:,.2f}", f"{pile_lab_price:,.2f}", f"{pile_l:,.2f}", f"{pile_m + pile_l:,.2f}")
+    boq_rows.append([str(item_no), f"เสาเข็มคอนกรีต (รวมความยาว {sum_pile_total_len:.2f} ม.)", f"{sum_piles_qty:.2f}", "ต้น", f"{pile_mat_price:,.2f}", f"{pile_m:,.2f}", f"{pile_lab_price:,.2f}", f"{pile_l:,.2f}", f"{pile_m + pile_l:,.2f}"])
+    item_no += 1
 
 # หมวด 2: งานดินขุด, ดินถมกลับ และรองพื้น
-add_boq_row("หมวด 2: งานดินขุด, ดินถมกลับ และรองพื้น", "", "", "", "", "", "", "", "")
+boq_rows.append(["หมวด 2", "งานดินขุด, ดินถมกลับ และรองพื้น", "", "", "", "", "", "", ""])
 earth_lab = sum_earthwork * earth_exc_lab_price
 if sum_earthwork > 0:
-    add_boq_row("งานขุดดินหลุมฐานราก", f"{sum_earthwork:.2f}", "ลบ.ม.", "0.00", "0.00", f"{earth_exc_lab_price:,.2f}", f"{earth_lab:,.2f}", f"{earth_lab:,.2f}")
+    boq_rows.append([str(item_no), "งานขุดดินหลุมฐานราก", f"{sum_earthwork:.2f}", "ลบ.ม.", "0.00", "0.00", f"{earth_exc_lab_price:,.2f}", f"{earth_lab:,.2f}", f"{earth_lab:,.2f}"])
+    item_no += 1
 
 backfill_m = sum_backfill * backfill_mat_price
 backfill_l = sum_backfill * backfill_lab_price
 if sum_backfill > 0:
-    add_boq_row(f"งานดินถมกลับและบดอัด (รวมเผื่อ {waste_backfill}%)", f"{sum_backfill:.2f}", "ลบ.ม.", f"{backfill_mat_price:,.2f}", f"{backfill_m:,.2f}", f"{backfill_lab_price:,.2f}", f"{backfill_l:,.2f}", f"{backfill_m + backfill_l:,.2f}")
+    boq_rows.append([str(item_no), f"งานดินถมกลับและบดอัด (รวมเผื่อ {waste_backfill}%)", f"{sum_backfill:.2f}", "ลบ.ม.", f"{backfill_mat_price:,.2f}", f"{backfill_m:,.2f}", f"{backfill_lab_price:,.2f}", f"{backfill_l:,.2f}", f"{backfill_m + backfill_l:,.2f}"])
+    item_no += 1
 
 sand_m = sum_sand * sand_mat_price
 sand_l = sum_sand * sand_lab_price
-add_boq_row(f"ทรายหยาบรองพื้น (รวมเผื่อ {waste_concrete}%)", f"{sum_sand:.3f}", "ลบ.ม.", f"{sand_mat_price:,.2f}", f"{sand_m:,.2f}", f"{sand_lab_price:,.2f}", f"{sand_l:,.2f}", f"{sand_m + sand_l:,.2f}")
+boq_rows.append([str(item_no), f"ทรายหยาบรองพื้น (รวมเผื่อ {waste_concrete}%)", f"{sum_sand:.3f}", "ลบ.ม.", f"{sand_mat_price:,.2f}", f"{sand_m:,.2f}", f"{sand_lab_price:,.2f}", f"{sand_l:,.2f}", f"{sand_m + sand_l:,.2f}"])
+item_no += 1
 
 lean_m = sum_lean * lean_mat_price
 lean_l = sum_lean * lean_lab_price
-add_boq_row(f"คอนกรีตหยาบรองพื้น (รวมเผื่อ {waste_concrete}%)", f"{sum_lean:.3f}", "ลบ.ม.", f"{lean_mat_price:,.2f}", f"{lean_m:,.2f}", f"{lean_lab_price:,.2f}", f"{lean_l:,.2f}", f"{lean_m + lean_l:,.2f}")
+boq_rows.append([str(item_no), f"คอนกรีตหยาบรองพื้น (รวมเผื่อ {waste_concrete}%)", f"{sum_lean:.3f}", "ลบ.ม.", f"{lean_mat_price:,.2f}", f"{lean_m:,.2f}", f"{lean_lab_price:,.2f}", f"{lean_l:,.2f}", f"{lean_m + lean_l:,.2f}"])
+item_no += 1
 
 # หมวด 3: งานคอนกรีตโครงสร้างและกันซึม
-add_boq_row("หมวด 3: งานคอนกรีตโครงสร้างและกันซึม", "", "", "", "", "", "", "", "")
+boq_rows.append(["หมวด 3", "งานคอนกรีตโครงสร้างและกันซึม", "", "", "", "", "", "", ""])
 c_mat = sum_concrete * conc_mat_price
 c_lab = sum_concrete * conc_lab_price
-add_boq_row(f"คอนกรีตโครงสร้าง 240 ksc. (รวมเผื่อ {waste_concrete}%)", f"{sum_concrete:.3f}", "ลบ.ม.", f"{conc_mat_price:,.2f}", f"{c_mat:,.2f}", f"{conc_lab_price:,.2f}", f"{c_lab:,.2f}", f"{c_mat + c_lab:,.2f}")
+boq_rows.append([str(item_no), f"คอนกรีตโครงสร้าง 240 ksc. (รวมเผื่อ {waste_concrete}%)", f"{sum_concrete:.3f}", "ลบ.ม.", f"{conc_mat_price:,.2f}", f"{c_mat:,.2f}", f"{conc_lab_price:,.2f}", f"{c_lab:,.2f}", f"{c_mat + c_lab:,.2f}"])
+item_no += 1
 
 if sum_waterproof > 0:
     wp_m = sum_waterproof * waterproof_mat_price
-    add_boq_row("งานกันซึมฐานราก/คานคอดิน", f"{sum_waterproof:.2f}", "ตร.ม.", f"{waterproof_mat_price:,.2f}", f"{wp_m:,.2f}", "0.00", "0.00", f"{wp_m:,.2f}")
+    boq_rows.append([str(item_no), "งานกันซึมฐานราก/คานคอดิน", f"{sum_waterproof:.2f}", "ตร.ม.", f"{waterproof_mat_price:,.2f}", f"{wp_m:,.2f}", "0.00", "0.00", f"{wp_m:,.2f}"])
+    item_no += 1
 
 # หมวด 4: งานไม้แบบและวัสดุสิ้นเปลือง
-add_boq_row("หมวด 4: งานไม้แบบและวัสดุสิ้นเปลือง", "", "", "", "", "", "", "", "")
+boq_rows.append(["หมวด 4", "งานไม้แบบและวัสดุสิ้นเปลือง", "", "", "", "", "", "", ""])
 f_mat = sum_formwork * form_mat_price
 f_lab = sum_formwork * form_lab_price
-add_boq_row(f"ไม้แบบโครงสร้างอัตโนมัติ (ฐานราก/ตอม่อ/คาน/เสา) (รวมเผื่อ {waste_formwork}%)", f"{sum_formwork:.2f}", "ตร.ม.", f"{form_mat_price:,.2f}", f"{f_mat:,.2f}", f"{form_lab_price:,.2f}", f"{f_lab:,.2f}", f"{f_mat + f_lab:,.2f}")
+boq_rows.append([str(item_no), f"ไม้แบบโครงสร้างอัตโนมัติ (ฐานราก/ตอม่อ/คาน/เสา) (รวมเผื่อ {waste_formwork}%)", f"{sum_formwork:.2f}", "ตร.ม.", f"{form_mat_price:,.2f}", f"{f_mat:,.2f}", f"{form_lab_price:,.2f}", f"{f_lab:,.2f}", f"{f_mat + f_lab:,.2f}"])
+item_no += 1
 
 total_form_area = sum_formwork + sum_slab_form
 nail_qty = total_form_area * 0.20
 nail_total_cost = nail_qty * nail_mat_price
-add_boq_row("ตะปู", f"{nail_qty:.2f}", "กก.", f"{nail_mat_price:,.2f}", f"{nail_total_cost:,.2f}", "0.00", "0.00", f"{nail_total_cost:,.2f}")
+boq_rows.append([str(item_no), "ตะปู", f"{nail_qty:.2f}", "กก.", f"{nail_mat_price:,.2f}", f"{nail_total_cost:,.2f}", "0.00", "0.00", f"{nail_total_cost:,.2f}"])
+item_no += 1
 
 total_r_mat = 0.0
 total_r_lab = 0.0
 total_rebar_weight = sum(sum_rebar_by_size.values())
 wire_qty = total_rebar_weight * 0.015
 wire_total_cost = wire_qty * wire_mat_price
-add_boq_row("ลวดผูกเหล็ก", f"{wire_qty:.2f}", "กก.", f"{wire_mat_price:,.2f}", f"{wire_total_cost:,.2f}", "0.00", "0.00", f"{wire_total_cost:,.2f}")
+boq_rows.append([str(item_no), "ลวดผูกเหล็ก", f"{wire_qty:.2f}", "กก.", f"{wire_mat_price:,.2f}", f"{wire_total_cost:,.2f}", "0.00", "0.00", f"{wire_total_cost:,.2f}"])
+item_no += 1
 
 # หมวด 5: งานพื้น คสล. หล่อในที่ และพื้นสำเร็จรูป SP/PS
-add_boq_row("หมวด 5: งานพื้น คสล. หล่อในที่ และพื้นสำเร็จรูป SP/PS", "", "", "", "", "", "", "", "")
+boq_rows.append(["หมวด 5", "งานพื้น คสล. หล่อในที่ และพื้นสำเร็จรูป SP/PS", "", "", "", "", "", "", ""])
 slab_conc_mat = sum_slab_conc * conc_mat_price
 slab_conc_lab = sum_slab_conc * slab_conc_lab_price
 if sum_slab_conc > 0:
-    add_boq_row(f"คอนกรีตพื้น คสล. หล่อในที่ (รวมเผื่อ {waste_concrete}%)", f"{sum_slab_conc:.3f}", "ลบ.ม.", f"{conc_mat_price:,.2f}", f"{slab_conc_mat:,.2f}", f"{slab_conc_lab_price:,.2f}", f"{slab_conc_lab:,.2f}", f"{slab_conc_mat + slab_conc_lab:,.2f}")
+    boq_rows.append([str(item_no), f"คอนกรีตพื้น คสล. หล่อในที่ (รวมเผื่อ {waste_concrete}%)", f"{sum_slab_conc:.3f}", "ลบ.ม.", f"{conc_mat_price:,.2f}", f"{slab_conc_mat:,.2f}", f"{slab_conc_lab_price:,.2f}", f"{slab_conc_lab:,.2f}", f"{slab_conc_mat + slab_conc_lab:,.2f}"])
+    item_no += 1
 
 slab_form_mat = sum_slab_form * form_mat_price
 slab_form_lab = sum_slab_form * slab_form_lab_price
 if sum_slab_form > 0:
-    add_boq_row(f"ไม้แบบพื้น คสล. หล่อในที่อัตโนมัติ (รวมเผื่อ {waste_formwork}%)", f"{sum_slab_form:.2f}", "ตร.ม.", f"{form_mat_price:,.2f}", f"{slab_form_mat:,.2f}", f"{slab_form_lab_price:,.2f}", f"{slab_form_lab:,.2f}", f"{slab_form_mat + slab_form_lab:,.2f}")
+    boq_rows.append([str(item_no), f"ไม้แบบพื้น คสล. หล่อในที่อัตโนมัติ (รวมเผื่อ {waste_formwork}%)", f"{sum_slab_form:.2f}", "ตร.ม.", f"{form_mat_price:,.2f}", f"{slab_form_mat:,.2f}", f"{slab_form_lab_price:,.2f}", f"{slab_form_lab:,.2f}", f"{slab_form_mat + slab_form_lab:,.2f}"])
+    item_no += 1
 
 if sum_sp_area > 0:
     sp_cost = sum_sp_area * sp_slab_price
-    add_boq_row("แผ่นพื้นสำเร็จรูป SP/PS", f"{sum_sp_area:.2f}", "ตร.ม.", f"{sp_slab_price:,.2f}", f"{sp_cost:,.2f}", "0.00", "0.00", f"{sp_cost:,.2f}")
+    boq_rows.append([str(item_no), "แผ่นพื้นสำเร็จรูป SP/PS", f"{sum_sp_area:.2f}", "ตร.ม.", f"{sp_slab_price:,.2f}", f"{sp_cost:,.2f}", "0.00", "0.00", f"{sp_cost:,.2f}"])
+    item_no += 1
 
 if sum_shoring_area > 0:
     shoring_m = sum_shoring_area * shoring_mat_price
     shoring_l = sum_shoring_area * shoring_lab_price
-    add_boq_row("ไม้ค้ำยันแผ่นพื้นสำเร็จรูป", f"{sum_shoring_area:.2f}", "ตร.ม.", f"{shoring_mat_price:,.2f}", f"{shoring_m:,.2f}", f"{shoring_lab_price:,.2f}", f"{shoring_l:,.2f}", f"{shoring_m + shoring_l:,.2f}")
+    boq_rows.append([str(item_no), "ไม้ค้ำยันแผ่นพื้นสำเร็จรูป", f"{sum_shoring_area:.2f}", "ตร.ม.", f"{shoring_mat_price:,.2f}", f"{shoring_m:,.2f}", f"{shoring_lab_price:,.2f}", f"{shoring_l:,.2f}", f"{shoring_m + shoring_l:,.2f}"])
+    item_no += 1
 
 # หมวด 6: งานเหล็กเสริม
-add_boq_row("หมวด 6: งานเหล็กเสริม", "", "", "", "", "", "", "", "")
+boq_rows.append(["หมวด 6", "งานเหล็กเสริม", "", "", "", "", "", "", ""])
 for r_size, r_weight in sum_rebar_by_size.items():
     if r_weight > 0:
         rm_price = rebar_prices[r_size]["mat"]
@@ -628,7 +640,8 @@ for r_size, r_weight in sum_rebar_by_size.items():
         rl = r_weight * rl_price
         total_r_mat += rm
         total_r_lab += rl
-        add_boq_row(f"เหล็กเสริม {r_size} มม. (รวมเผื่อ {waste_rebar}%)", f"{r_weight:.2f}", "กก.", f"{rm_price:,.2f}", f"{rm:,.2f}", f"{rl_price:,.2f}", f"{rl:,.2f}", f"{rm + rl:,.2f}")
+        boq_rows.append([str(item_no), f"เหล็กเสริม {r_size} มม. (รวมเผื่อ {waste_rebar}%)", f"{r_weight:.2f}", "กก.", f"{rm_price:,.2f}", f"{rm:,.2f}", f"{rl_price:,.2f}", f"{rl:,.2f}", f"{rm + rl:,.2f}"])
+        item_no += 1
 
 total_mat_cost = (
     (sum_piles_qty * pile_mat_price)
