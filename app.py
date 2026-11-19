@@ -113,13 +113,26 @@ with tab1:
 
     with st.expander("🏗️ 3. งานฐานราก (Footing Schedule)", expanded=False):
         default_footings = pd.DataFrame([
-            {"ฐานราก": "", "กว้าง B (ม.)": 0.0, "ยาว L (ม.)": 0.0, "หนา t (ม.)": 0.0, "จำนวน (ฐาน)": 0, "พื้นที่ไม้แบบ (ตร.ม.)": 0.0, "เหล็กตะแกรง": "DB12", "ระยะเรียง @ (ม.)": 0.20, "จำนวนเดือย": 4, "เหล็กเดือย": "DB16"},
+            {
+                "ฐานราก": "",
+                "กว้าง B (ม.)": 0.0,
+                "ยาว L (ม.)": 0.0,
+                "หนา t (ม.)": 0.0,
+                "จำนวน (ฐาน)": 0,
+                "พื้นที่ไม้แบบ (ตร.ม.)": 0.0,
+                "เหล็กตะแกรง": "DB12",
+                "ระยะเรียง @ (ม.)": 0.20,
+                "เหล็กเสริม": "DB12",
+                "เหล็กปลอก": "RB6",
+                "ระยะเรียงปลอก (ม.)": 0.15,
+            },
         ])
         edited_footings = st.data_editor(
             default_footings, num_rows="dynamic", key=f"footing_table_pro_{st.session_state.reset_trigger}", use_container_width=True,
             column_config={
                 "เหล็กตะแกรง": st.column_config.SelectboxColumn(options=rebar_choices),
-                "เหล็กเดือย": st.column_config.SelectboxColumn(options=rebar_choices),
+                "เหล็กเสริม": st.column_config.SelectboxColumn(options=rebar_choices),
+                "เหล็กปลอก": st.column_config.SelectboxColumn(options=rebar_choices),
             }
         )
 
@@ -271,15 +284,33 @@ if not edited_footings.empty:
             mat_len = ((n_b * len_b) + (n_l * len_l)) * qty
             mat_kg = (mat_len * rebar_unit_weights.get(mat_size, 0.888)) * (1.0 + waste_rebar/100.0)
 
-            dowel_size = str(row.get("เหล็กเดือย", "DB16"))
-            dowel_qty = int(row.get("จำนวนเดือย", 4)) if pd.notna(row.get("จำนวนเดือย")) else 4
-            dowel_kg = (dowel_qty * 1.20 * qty * rebar_unit_weights.get(dowel_size, 1.578)) * (1.0 + waste_rebar/100.0)
+            rebar_size = str(row.get("เหล็กเสริม", "DB12"))
+            rebar_kg = (mat_len * rebar_unit_weights.get(rebar_size, 0.888)) * (1.0 + waste_rebar/100.0)
+
+            tie_size = str(row.get("เหล็กปลอก", "RB6"))
+            tie_sp = float(row.get("ระยะเรียงปลอก (ม.)", 0.15)) if pd.notna(row.get("ระยะเรียงปลอก (ม.)")) else 0.15
+            num_ties = int(t / tie_sp) + 1 if tie_sp > 0 else 1
+            tie_perim = (2 * (max(b - 0.15, 0.08) + max(l - 0.15, 0.08))) + 0.10
+            tie_kg = (num_ties * tie_perim * qty * rebar_unit_weights.get(tie_size, 0.222)) * (1.0 + waste_rebar/100.0)
 
             sum_rebar_by_size[mat_size] = sum_rebar_by_size.get(mat_size, 0.0) + mat_kg
-            sum_rebar_by_size[dowel_size] = sum_rebar_by_size.get(dowel_size, 0.0) + dowel_kg
+            sum_rebar_by_size[rebar_size] = sum_rebar_by_size.get(rebar_size, 0.0) + rebar_kg
+            sum_rebar_by_size[tie_size] = sum_rebar_by_size.get(tie_size, 0.0) + tie_kg
             
-            footing_mat_cost = (conc * conc_mat_price) + (form * form_mat_price) + (mat_kg * rebar_prices[mat_size]["mat"]) + (dowel_kg * rebar_prices[dowel_size]["mat"])
-            footing_lab_cost = (conc * conc_lab_price) + (form * form_lab_price) + (mat_kg * rebar_prices[mat_size]["lab"]) + (dowel_kg * rebar_prices[dowel_size]["lab"])
+            footing_mat_cost = (
+                (conc * conc_mat_price)
+                + (form * form_mat_price)
+                + (mat_kg * rebar_prices[mat_size]["mat"])
+                + (rebar_kg * rebar_prices[rebar_size]["mat"])
+                + (tie_kg * rebar_prices[tie_size]["mat"])
+            )
+            footing_lab_cost = (
+                (conc * conc_lab_price)
+                + (form * form_lab_price)
+                + (mat_kg * rebar_prices[mat_size]["lab"])
+                + (rebar_kg * rebar_prices[rebar_size]["lab"])
+                + (tie_kg * rebar_prices[tie_size]["lab"])
+            )
             add_floor_cost("ชั้น 1 (Ground Floor)", footing_mat_cost, footing_lab_cost)
         except: continue
 
