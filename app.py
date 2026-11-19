@@ -537,14 +537,11 @@ if not edited_sp_slabs.empty:
 
 sum_formwork = sum_footing_form + sum_pier_form + sum_beam_form + sum_column_form
 
-# --- สร้าง Master BOQ Rows (ใส่ลำดับ 1, 2, 3... ต่อเนื่องทุกแถว) ---
+# --- สร้าง Master BOQ Rows (ใส่ลำดับ 1, 2, 3... ต่อเนื่องทุกแถวโดยไม่ใช้ global) ---
 boq_rows = []
-seq = 1
 
 def add_boq_row(desc, qty_str, unit, mat_u, mat_tot, lab_u, lab_tot, total_cost):
-    global seq
-    boq_rows.append([str(seq), desc, qty_str, unit, mat_u, mat_tot, lab_u, lab_tot, total_cost])
-    seq += 1
+    boq_rows.append([str(len(boq_rows) + 1), desc, qty_str, unit, mat_u, mat_tot, lab_u, lab_tot, total_cost])
 
 # หมวด 1: เสาเข็ม
 add_boq_row("หมวด 1: งานเสาเข็ม", "", "", "", "", "", "", "", "")
